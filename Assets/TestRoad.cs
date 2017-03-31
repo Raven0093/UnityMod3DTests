@@ -26,7 +26,7 @@ public class TestRoad : MonoBehaviour
     //public float maxLat = 50.3354f;
 
 
-    IEnumerable<UnityWay> highwaysData;
+    IEnumerable<IUnityModel> highwaysData;
     OsmDataManager osmDataManager;
     private bool gettingDataManagerFinished;
     private bool gettingDataManagerStarted;
@@ -55,7 +55,9 @@ public class TestRoad : MonoBehaviour
     {
         new Thread(delegate ()
         {
-            IEnumerable<UnityWay> tmpHighwaysData = osmDataManager.GetHighways(Enum.GetValues(typeof(HighwayTypeEnum)) as HighwayTypeEnum[]);
+            //IEnumerable<IUnityModel> tmpHighwaysData = osmDataManager.GetHighways(Enum.GetValues(typeof(HighwayTypeEnum)) as HighwayTypeEnum[]);
+
+            IEnumerable<IUnityModel> tmpHighwaysData = osmDataManager.GetBuilding();
             lock (highwayDataLock)
             {
                 highwaysData = tmpHighwaysData;
@@ -88,6 +90,42 @@ public class TestRoad : MonoBehaviour
                 }
                 LineRenderer lineRender = newLine.GetComponent<LineRenderer>();
                 lineRender.numPositions = item.HighwayPoints.Count;
+                lineRender.startWidth = 0.3f;
+                lineRender.endWidth = 0.3f;
+                lineRender.SetPositions(linePoints);
+            }
+
+
+        }
+        Debug.Log(String.Format("addHighwaysToSceneFinished - {0}", DateTime.Now.TimeOfDay));
+        text.text += String.Format("addHighwaysToSceneFinished - {0}\r\n", DateTime.Now.TimeOfDay);
+        Canvas.ForceUpdateCanvases();
+    }
+
+    private void AddBuildingsToScene()
+    {
+
+        foreach (UnityBuilding item in highwaysData)
+        {
+            if (item.BuildingPoints.Count > 1)
+            {
+                GameObject newLine = Instantiate(line);
+                newLine.transform.SetParent(transform);
+                newLine.name = item.Name;
+
+                Vector3[] linePoints = new Vector3[item.BuildingPoints.Count];
+
+                for (int i = 0; i < item.BuildingPoints.Count; i++)
+                {
+                    float multipler = 10000;
+                    float x = (item.BuildingPoints[i].Lat - (float)bounds.MinLat) * multipler;
+                    float y = 0;
+                    float z = (item.BuildingPoints[i].Lon - (float)bounds.MinLon) * multipler;
+
+                    linePoints[i] = new Vector3(x, y, z);
+                }
+                LineRenderer lineRender = newLine.GetComponent<LineRenderer>();
+                lineRender.numPositions = item.BuildingPoints.Count;
                 lineRender.startWidth = 0.3f;
                 lineRender.endWidth = 0.3f;
                 lineRender.SetPositions(linePoints);
@@ -163,7 +201,8 @@ public class TestRoad : MonoBehaviour
             text.text += String.Format("addHighwaysToSceneStarting - {0}\r\n", DateTime.Now.TimeOfDay);
             Canvas.ForceUpdateCanvases();
             addHighwaysToSceneFinished = true;
-            AddHighwaysToScene();
+            //AddHighwaysToScene();
+            AddBuildingsToScene();
         }
 
     }
