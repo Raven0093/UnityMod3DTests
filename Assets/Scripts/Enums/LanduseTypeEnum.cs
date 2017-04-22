@@ -9,8 +9,6 @@ namespace Assets.Scripts.Enums
     {
         [OSMtoSharp.Enums.Helpers.Enum("")]
         None,
-        [OSMtoSharp.Enums.Helpers.Enum("line")]
-        Line,
         [OSMtoSharp.Enums.Helpers.Enum("allotments")]
         Allotments,
         [OSMtoSharp.Enums.Helpers.Enum("basin")]
@@ -21,6 +19,8 @@ namespace Assets.Scripts.Enums
         Cemetery,
         [OSMtoSharp.Enums.Helpers.Enum("commercial")]
         Commercial,
+        [OSMtoSharp.Enums.Helpers.Enum("conservation")]
+        Conservation,
         [OSMtoSharp.Enums.Helpers.Enum("construction")]
         Construction,
         [OSMtoSharp.Enums.Helpers.Enum("depot")]
@@ -49,20 +49,31 @@ namespace Assets.Scripts.Enums
         Military,
         [OSMtoSharp.Enums.Helpers.Enum("orchard")]
         Orchard,
+        [OSMtoSharp.Enums.Helpers.Enum("pasture")]
+        Pasture,
+        [OSMtoSharp.Enums.Helpers.Enum("peat_cutting")]
+        PeatCutting,
         [OSMtoSharp.Enums.Helpers.Enum("plant_nursery")]
         PlantNursery,
+        [OSMtoSharp.Enums.Helpers.Enum("port")]
+        Port,
         [OSMtoSharp.Enums.Helpers.Enum("quarry")]
         Quarry,
         [OSMtoSharp.Enums.Helpers.Enum("railway")]
         Railway,
+        [OSMtoSharp.Enums.Helpers.Enum("recreation_ground")]
+        RecreationGround,
+        [OSMtoSharp.Enums.Helpers.Enum("reservoir")]
+        Reservoir,
         [OSMtoSharp.Enums.Helpers.Enum("residential")]
         Residential,
         [OSMtoSharp.Enums.Helpers.Enum("retail")]
         Retail,
         [OSMtoSharp.Enums.Helpers.Enum("salt_pond")]
         SaltPond,
+        [OSMtoSharp.Enums.Helpers.Enum("village_green")]
+        VillageGreen,
         [OSMtoSharp.Enums.Helpers.Enum("vineyard")]
         Vineyard
-
     }
 }

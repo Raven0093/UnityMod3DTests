@@ -160,7 +160,7 @@ public class DataManager : MonoBehaviour
                 Assets.Scripts.Factories.Osm.RailWaysFactory.CreateRailway(wayDic.Value, osmData.bounds, railways.transform);
                 continue;
             }
-            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Landuse) || wayDic.Value.Tags.ContainsKey(TagKeyEnum.Leisure))
+            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Landuse) || wayDic.Value.Tags.ContainsKey(TagKeyEnum.Leisure) || wayDic.Value.Tags.ContainsKey(TagKeyEnum.Amenity))
             {
                 //TODO - Add Railway line
                 Assets.Scripts.Factories.Osm.FlatAreaFactory.CreateArea(wayDic.Value, osmData.bounds, flatArea.transform);

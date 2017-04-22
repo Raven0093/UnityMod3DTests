@@ -20,6 +20,10 @@ namespace Assets.Scripts.Factories.Osm
         {
             public const float wallHeight = 2f;
             public const float wallWidth = 0.0001f;
+            public const int firstIndexRandomRoof = 0;
+            public const int endIndexRandomRoof = 4;
+
+
         }
 
         public static float GetWallHeight(BuildingsTypeEnum type, int level)
@@ -33,6 +37,13 @@ namespace Assets.Scripts.Factories.Osm
             roof.transform.localPosition = new Vector3(roof.transform.localPosition.x, height, roof.transform.localPosition.z);
             roof.name = "roof";
 
+
+            string materiaName = string.Format("{0}/{1}_{2}",
+                    Constants.Constants.MaterialsFolderName,
+                    "roof", new System.Random().Next(BuildingsConstants.firstIndexRandomRoof, BuildingsConstants.endIndexRandomRoof));
+
+            Material material = Resources.Load(materiaName, typeof(Material)) as Material;
+            roof.GetComponent<Renderer>().material = material;
             roof.transform.parent = parent;
         }
 
@@ -65,7 +76,7 @@ namespace Assets.Scripts.Factories.Osm
                                                width, height);
 
 
-                Material material = new Material(Resources.Load("Wall", typeof(Material)) as Material);
+                Material material = new Material(Resources.Load("shop_0", typeof(Material)) as Material);
 
                 material.mainTextureScale = new Vector2((int)wall.transform.localScale.z, levels);
 
@@ -101,7 +112,7 @@ namespace Assets.Scripts.Factories.Osm
                 levels += float.Parse(buildingData.Tags[TagKeyEnum.BuildingLevels], CultureInfo.InvariantCulture);
                 height = levels * BuildingsConstants.wallHeight;
             }
-            if (buildingData.Tags.ContainsKey(TagKeyEnum.Min_level))
+            if (buildingData.Tags.ContainsKey(TagKeyEnum.MinLevel))
             {
                 levels -= float.Parse(buildingData.Tags[TagKeyEnum.BuildingLevels], CultureInfo.InvariantCulture);
                 minHeight = BuildingsConstants.wallHeight;
