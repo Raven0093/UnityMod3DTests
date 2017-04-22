@@ -27,19 +27,9 @@ namespace Assets.Scripts.Factories.Osm
             return BuildingsConstants.wallHeight * Assets.Scripts.Constants.Constants.Scale * level;
         }
 
-        public static void CreateRoof(List<OsmNode> nodes, OsmBounds bounds, float height, Transform parent)
+        public static void CreateRoof(OsmWay buildingData, OsmBounds bounds, float height, Transform parent)
         {
-            var buildingCorners = new List<Vector3>();
-
-
-            for (int i = 0; i < nodes.Count - 1; i++)
-            {
-                buildingCorners.Add(OsmToUnityConverter.GetPointFromUnityPointVec3(nodes[i].Point, bounds));
-            }
-
-            GameObject roof = new GameObject();
-            roof.AddComponent<MeshRenderer>();
-            roof.AddComponent<MeshFilter>().mesh = MeshFactory.CreateMesh(buildingCorners);
+            GameObject roof = MeshFactory.CreateMesh(buildingData, bounds);
             roof.transform.localPosition = new Vector3(roof.transform.localPosition.x, height, roof.transform.localPosition.z);
             roof.name = "roof";
 
@@ -137,7 +127,7 @@ namespace Assets.Scripts.Factories.Osm
                                                                    (buildingData.Tags[TagKeyEnum.Building]);
 
             CreateWalls(buildingData.Nodes, bounds, BuildingsConstants.wallWidth, levels, height, minHeight, result.transform);
-            CreateRoof(buildingData.Nodes, bounds, height, result.transform);
+            CreateRoof(buildingData, bounds, height, result.transform);
 
             result.transform.parent = parent;
         }

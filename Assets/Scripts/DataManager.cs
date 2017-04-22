@@ -22,7 +22,7 @@ public class DataManager : MonoBehaviour
     private bool dataParserFinished;
 
 
-    string fileName = "C:\\Users\\Public\\Documents\\Unity Projects\\Tests\\Files\\Gliwice.osm";
+    string fileName = "C:\\Users\\Public\\Documents\\Unity Projects\\Tests\\Files\\Gliwice2.osm";
     double minLon = -100;
     double minLat = -100;
     double maxLon = 100;
@@ -99,12 +99,32 @@ public class DataManager : MonoBehaviour
 
     private void AddDataToScene()
     {
+        GameObject highways = new GameObject();
+        highways.name = "highways";
+        highways.transform.parent = transform;
+        GameObject powerLines = new GameObject();
+        powerLines.name = "powerLines";
+        powerLines.transform.parent = transform;
+        GameObject railways = new GameObject();
+        railways.name = "railways";
+        railways.transform.parent = transform;
+        GameObject buildings = new GameObject();
+        buildings.name = "buildings";
+        buildings.transform.parent = transform;
+        GameObject powerTowers = new GameObject();
+        powerTowers.name = "powerTowers";
+        powerTowers.transform.parent = transform;
+        GameObject flatArea = new GameObject();
+        flatArea.name = "landuses";
+        flatArea.transform.parent = transform;
+
+
         foreach (var nodeDic in osmData.Nodes)
         {
             if (nodeDic.Value.Tags.ContainsKey(TagKeyEnum.Power))
             {
                 //TODO - Add Power tower
-                Assets.Scripts.Factories.Osm.PowerFactory.CreatePower(nodeDic.Value, osmData.bounds, transform);
+                Assets.Scripts.Factories.Osm.PowerFactory.CreatePower(nodeDic.Value, osmData.bounds, powerTowers.transform);
                 continue;
             }
 
@@ -115,7 +135,7 @@ public class DataManager : MonoBehaviour
             if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Power))
             {
                 //TODO - Add Power line
-                Assets.Scripts.Factories.Osm.PowerFactory.CreatePower(wayDic.Value, osmData.bounds, transform);
+                Assets.Scripts.Factories.Osm.PowerFactory.CreatePower(wayDic.Value, osmData.bounds, powerLines.transform);
                 continue;
             }
             if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Building))
@@ -125,19 +145,25 @@ public class DataManager : MonoBehaviour
                 //                                                   GetTagKeyEnum<OSMtoSharp.Enums.Values.BuildingsTypeEnum>
                 //                                                   (wayDic.Value.Tags[TagKeyEnum.Building]);
                 //if (type == OSMtoSharp.Enums.Values.BuildingsTypeEnum.Residential)
-                Assets.Scripts.Factories.Osm.BuildingFactory.CreateBuilding(wayDic.Value, osmData.bounds, transform);
+                Assets.Scripts.Factories.Osm.BuildingFactory.CreateBuilding(wayDic.Value, osmData.bounds, buildings.transform);
                 continue;
             }
             if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Highway))
             {
                 //TODO - Add HighWay line
-                Assets.Scripts.Factories.Osm.HighwayFactory.CreateHighway(wayDic.Value, osmData.bounds, transform);
+                Assets.Scripts.Factories.Osm.HighwayFactory.CreateHighway(wayDic.Value, osmData.bounds, highways.transform);
                 continue;
             }
             if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Railway))
             {
                 //TODO - Add Railway line
-                Assets.Scripts.Factories.Osm.RailWaysFactory.CreateRailway(wayDic.Value, osmData.bounds, transform);
+                Assets.Scripts.Factories.Osm.RailWaysFactory.CreateRailway(wayDic.Value, osmData.bounds, railways.transform);
+                continue;
+            }
+            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Landuse) || wayDic.Value.Tags.ContainsKey(TagKeyEnum.Leisure))
+            {
+                //TODO - Add Railway line
+                Assets.Scripts.Factories.Osm.FlatAreaFactory.CreateArea(wayDic.Value, osmData.bounds, flatArea.transform);
                 continue;
             }
         }

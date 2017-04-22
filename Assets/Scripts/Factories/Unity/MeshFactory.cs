@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using UnityEngine;
 
-namespace Assets.Scripts.Factories
+namespace Assets.Scripts.Factories.Unity
 {
     public class MeshFactory
     {
