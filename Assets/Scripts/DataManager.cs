@@ -1,13 +1,27 @@
 ﻿using OSMtoSharp;
+using OSMtoSharp.FileManagers;
+using OSMtoSharp.Model;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
+using OSMtoSharp.Enums.Keys;
+
 
 public class DataManager : MonoBehaviour
 {
+
+    OsmData osmData;
+
+    private object osmDataLock;
+
+    private bool dataManagerFinished;
+    private bool dataParserStarted;
+    private bool dataParserFinished;
+
+
     string fileName = "C:\\Users\\Public\\Documents\\Unity Projects\\Tests\\Files\\Gliwice.osm";
     double minLon = -100;
     double minLat = -100;
@@ -15,68 +29,32 @@ public class DataManager : MonoBehaviour
     double maxLat = 100;
     public Text debugConsoleText;
 
-    private bool dataManagerFinished;
-
-    private bool dataParserStarted;
-    private bool dataParserFinished;
-
-    private bool gettinHighwayDataStarted;
-    private bool gettinHighwayDataFinished;
-
-    private bool gettinBuildingsDataStarted;
-    private bool gettinBuildingsDataFinished;
-
-    private bool gettinRailwayDataStarted;
-    private bool gettinRailwayDataFinished;
-
-    private bool gettinPowerLinesDataStarted;
-    private bool gettinPowerLinesDataFinished;
-
-    private bool gettinPowerTowersDataStarted;
-    private bool gettinPowerTowersDataFinished;
+    private string DebugConsoleText
+    {
+        get
+        {
+            return debugConsoleText.text;
+        }
+        set
+        {
+            debugConsoleText.text = value;
+            Canvas.ForceUpdateCanvases();
+        }
+    }
 
     private object dataParserLock;
-    private object highwayDataLock;
-    private object railwayDataLock;
-    private object buildingsDataLock;
-    private object powerLinesDataLock;
-    private object powerTowersDataLock;
-
-    OsmBounds bounds;
-    IEnumerable<IUnityModel> highwaysData;
-    IEnumerable<IUnityModel> buildingsData;
-    IEnumerable<IUnityModel> railwaysData;
-    IEnumerable<IUnityModel> powerLinesData;
-    IEnumerable<IUnityModel> powerTowersData;
-    OsmDataManager osmDataManager;
 
     void Start()
     {
+        osmDataLock = new object();
         dataParserLock = new object();
-        highwayDataLock = new object();
-        railwayDataLock = new object();
-        buildingsDataLock = new object();
-        powerLinesDataLock = new object();
-        powerTowersDataLock = new object();
 
         dataParserStarted = false;
         dataParserFinished = false;
 
-        gettinHighwayDataStarted = false;
-        gettinHighwayDataFinished = false;
+        dataManagerFinished = false;
 
-        gettinBuildingsDataStarted = false;
-        gettinBuildingsDataFinished = false;
-
-        gettinRailwayDataStarted = false;
-        gettinRailwayDataFinished = false;
-
-        gettinPowerLinesDataStarted = false;
-        gettinPowerLinesDataFinished = false;
-
-
-        gettinPowerTowersDataStarted = false;
-        gettinPowerTowersDataFinished = false;
+        osmData = null;
     }
 
     void Update()
@@ -89,272 +67,93 @@ public class DataManager : MonoBehaviour
                 {
                     dataParserStarted = true;
 
-                    debugConsoleText.text += String.Format("Loading data - {0} \r\n", DateTime.Now.TimeOfDay);
-                    Canvas.ForceUpdateCanvases();
+                    DebugConsoleText += String.Format("Data loading - {0} \r\n", DateTime.Now.TimeOfDay);
 
-                    GetOsmDataManager();
+                    GetOsmData();
                 }
                 else
                 {
                     lock (dataParserLock)
                     {
-                        if (osmDataManager != null)
+                        if (osmData != null)
                         {
+                            DebugConsoleText += String.Format("Data loaded - {0} \r\n", DateTime.Now.TimeOfDay);
+
+                            osmData.FillWaysNode();
+                            osmData.RemoveNodesWithoutTags();
+                            osmData.RemoveRelationsWithoutMembers();
+                            osmData.RemoveWaysWithoutNodes();
+
                             dataParserFinished = true;
                         }
-
                     }
                 }
             }
             else
             {
-                if (!gettinHighwayDataFinished)
-                {
-                    if (!gettinHighwayDataStarted)
-                    {
-                        gettinHighwayDataStarted = true;
-
-                        debugConsoleText.text += String.Format("gettinHighwayDataStarted - {0}\r\n", DateTime.Now.TimeOfDay);
-                        Canvas.ForceUpdateCanvases();
-
-                        GetHighwayData();
-                    }
-                    else
-                    {
-                        lock (highwayDataLock)
-                        {
-                            if (highwaysData != null)
-                            {
-                                gettinHighwayDataFinished = true;
-                                AddHighwaysToScene();
-                            }
-
-                        }
-                    }
-                }
-
-                if (!gettinRailwayDataFinished && gettinHighwayDataFinished)
-                {
-                    if (!gettinRailwayDataStarted)
-                    {
-                        gettinRailwayDataStarted = true;
-
-                        debugConsoleText.text += String.Format("gettinRailwayDataStarted - {0}\r\n", DateTime.Now.TimeOfDay);
-                        Canvas.ForceUpdateCanvases();
-
-                        GetRailwayData();
-                    }
-                    else
-                    {
-                        lock (railwayDataLock)
-                        {
-                            if (railwaysData != null)
-                            {
-                                gettinRailwayDataFinished = true;
-                                AddRailwaysToScene();
-                            }
-
-                        }
-                    }
-                }
-
-                if (!gettinBuildingsDataFinished && gettinRailwayDataFinished)
-                {
-                    if (!gettinBuildingsDataStarted)
-                    {
-                        gettinBuildingsDataStarted = true;
-
-                        debugConsoleText.text += String.Format("gettinBuildingsDataStarted - {0}\r\n", DateTime.Now.TimeOfDay);
-                        Canvas.ForceUpdateCanvases();
-
-                        GetBuildingsData();
-                    }
-                    else
-                    {
-                        lock (buildingsDataLock)
-                        {
-                            if (buildingsData != null)
-                            {
-                                gettinBuildingsDataFinished = true;
-
-                                AddBuildingsToScene();
-                            }
-
-                        }
-                    }
-                }
-
-                if (!gettinPowerLinesDataFinished && gettinBuildingsDataFinished)
-                {
-                    if (!gettinPowerLinesDataStarted)
-                    {
-                        gettinPowerLinesDataStarted = true;
-
-                        debugConsoleText.text += String.Format("gettinPowerLinesDataStarted - {0}\r\n", DateTime.Now.TimeOfDay);
-                        Canvas.ForceUpdateCanvases();
-
-                        GetPowerLinesData();
-                    }
-                    else
-                    {
-                        lock (powerLinesDataLock)
-                        {
-                            if (powerLinesData != null)
-                            {
-                                gettinPowerLinesDataFinished = true;
-                                AddPowerLinesToScene();
-                            }
-
-                        }
-                    }
-                }
-
-                if (!gettinPowerTowersDataFinished && gettinPowerLinesDataFinished)
-                {
-                    if (!gettinPowerTowersDataStarted)
-                    {
-                        gettinPowerTowersDataStarted = true;
-
-                        debugConsoleText.text += String.Format("gettinPowerTowersDataStarted - {0}\r\n", DateTime.Now.TimeOfDay);
-                        Canvas.ForceUpdateCanvases();
-
-                        GetPowerTowersData();
-                    }
-                    else
-                    {
-                        lock (powerLinesDataLock)
-                        {
-                            if (powerLinesData != null)
-                            {
-                                gettinPowerTowersDataFinished = true;
-                                AddPowerTowersToScene();
-                            }
-
-                        }
-                    }
-                }
-
-                if (gettinHighwayDataFinished && gettinRailwayDataFinished && gettinBuildingsDataFinished && gettinPowerLinesDataFinished && gettinPowerTowersDataFinished)
-                {
-                    dataManagerFinished = true;
-                }
+                AddDataToScene();
+                dataManagerFinished = true;
             }
         }
     }
 
-    private void GetOsmDataManager()
+    private void AddDataToScene()
+    {
+        foreach (var nodeDic in osmData.Nodes)
+        {
+            if (nodeDic.Value.Tags.ContainsKey(TagKeyEnum.Power))
+            {
+                //TODO - Add Power tower
+                Assets.Scripts.Factories.Osm.PowerFactory.CreatePower(nodeDic.Value, osmData.bounds, transform);
+                continue;
+            }
+
+        }
+
+        foreach (var wayDic in osmData.Ways)
+        {
+            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Power))
+            {
+                //TODO - Add Power line
+                Assets.Scripts.Factories.Osm.PowerFactory.CreatePower(wayDic.Value, osmData.bounds, transform);
+                continue;
+            }
+            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Building))
+            {
+                //TODO - Add Building line
+                //OSMtoSharp.Enums.Values.BuildingsTypeEnum type = OSMtoSharp.Enums.Helpers.EnumExtensions.
+                //                                                   GetTagKeyEnum<OSMtoSharp.Enums.Values.BuildingsTypeEnum>
+                //                                                   (wayDic.Value.Tags[TagKeyEnum.Building]);
+                //if (type == OSMtoSharp.Enums.Values.BuildingsTypeEnum.Residential)
+                Assets.Scripts.Factories.Osm.BuildingFactory.CreateBuilding(wayDic.Value, osmData.bounds, transform);
+                continue;
+            }
+            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Highway))
+            {
+                //TODO - Add HighWay line
+                Assets.Scripts.Factories.Osm.HighwayFactory.CreateHighway(wayDic.Value, osmData.bounds, transform);
+                continue;
+            }
+            if (wayDic.Value.Tags.ContainsKey(TagKeyEnum.Railway))
+            {
+                //TODO - Add Railway line
+                Assets.Scripts.Factories.Osm.RailWaysFactory.CreateRailway(wayDic.Value, osmData.bounds, transform);
+                continue;
+            }
+        }
+    }
+
+
+    private void GetOsmData()
     {
         new Thread(delegate ()
         {
-            OsmData osmData = OsmParser.GetDataFromOSM(fileName, minLon, minLat, maxLon, maxLat);
-            OsmDataManager tmpOsmDataManager = new OsmDataManager(osmData);
+            OsmData tmpOsmData = OsmParser.Parse(fileName, minLon, minLat, maxLon, maxLat);
 
-            lock (dataParserLock)
+            lock (osmDataLock)
             {
-                bounds = osmData.bounds;
-                osmDataManager = tmpOsmDataManager;
+                osmData = tmpOsmData;
             }
         }).Start();
-    }
-
-    private void GetHighwayData()
-    {
-        new Thread(delegate ()
-        {
-            IEnumerable<IUnityModel> tmpHighwaysData = osmDataManager.GetHighways(true, Enum.GetValues(typeof(HighwayTypeEnum)) as HighwayTypeEnum[]);
-
-            lock (highwayDataLock)
-            {
-                highwaysData = tmpHighwaysData;
-            }
-        }).Start();
-    }
-
-    private void GetRailwayData()
-    {
-        new Thread(delegate ()
-        {
-            IEnumerable<IUnityModel> tmpRailwayData = osmDataManager.GetRailways(true);
-
-            lock (railwayDataLock)
-            {
-                railwaysData = tmpRailwayData;
-            }
-        }).Start();
-    }
-
-    private void GetPowerLinesData()
-    {
-        new Thread(delegate ()
-        {
-            IEnumerable<IUnityModel> tmpPowerLinesData = osmDataManager.GetPowerLines(true);
-
-            lock (powerLinesDataLock)
-            {
-                powerLinesData = tmpPowerLinesData;
-            }
-        }).Start();
-    }
-
-    private void GetBuildingsData()
-    {
-        new Thread(delegate ()
-        {
-            IEnumerable<IUnityModel> tmpBuildingsData = osmDataManager.GetBuildings(true, Enum.GetValues(typeof(BuildingsTypeEnum)) as BuildingsTypeEnum[]);
-
-            lock (buildingsDataLock)
-            {
-                buildingsData = tmpBuildingsData;
-            }
-        }).Start();
-    }
-
-    private void GetPowerTowersData()
-    {
-        new Thread(delegate ()
-        {
-            IEnumerable<IUnityModel> tmpPowerTowersData = osmDataManager.GetPowerTowers();
-
-            lock (powerTowersDataLock)
-            {
-                powerTowersData = tmpPowerTowersData;
-            }
-        }).Start();
-    }
-
-    private void AddHighwaysToScene()
-    {
-        HighwaysGenerator.AddHighwaysToGameObject(highwaysData, transform, bounds);
-        debugConsoleText.text += String.Format("addHighwaysToSceneFinished - {0}\r\n", DateTime.Now.TimeOfDay);
-        Canvas.ForceUpdateCanvases();
-    }
-
-    private void AddRailwaysToScene()
-    {
-        RailwaysGenerator.AddRailwayToGameObject(railwaysData, transform, bounds);
-        debugConsoleText.text += String.Format("addRailwaysToSceneFinished - {0}\r\n", DateTime.Now.TimeOfDay);
-        Canvas.ForceUpdateCanvases();
-    }
-
-    private void AddBuildingsToScene()
-    {
-        BuildingsGenerator.AddBuildingsToGameObject(buildingsData, transform, bounds);
-        debugConsoleText.text += String.Format("addBuildingsToSceneFinished - {0}\r\n", DateTime.Now.TimeOfDay);
-        Canvas.ForceUpdateCanvases();
-    }
-
-    private void AddPowerLinesToScene()
-    {
-        PowerLinesGenerator.AddPowerLinesToGameObject(powerLinesData, transform, bounds);
-        debugConsoleText.text += String.Format("addPowerLinesToSceneFinished - {0}\r\n", DateTime.Now.TimeOfDay);
-        Canvas.ForceUpdateCanvases();
-    }
-
-
-    private void AddPowerTowersToScene()
-    {
-        PowerTowersGenerator.AddPowerTowersToGameObject(powerTowersData, transform, bounds);
-        debugConsoleText.text += String.Format("addPowerTowersToSceneFinished - {0}\r\n", DateTime.Now.TimeOfDay);
-        Canvas.ForceUpdateCanvases();
     }
 }
