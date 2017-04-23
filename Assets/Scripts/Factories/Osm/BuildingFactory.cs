@@ -42,13 +42,22 @@ namespace Assets.Scripts.Factories.Osm
             roof.transform.localPosition = new Vector3(roof.transform.localPosition.x, height, roof.transform.localPosition.z);
             roof.name = "roof";
 
+            if (buildingData.Tags.ContainsKey(TagKeyEnum.RoofColour))
+            {
+                var color = OsmToUnityConverter.HexToColor(buildingData.Tags[TagKeyEnum.RoofColour].Replace("#", ""));
+                roof.GetComponent<Renderer>().material.color = color;
+            }
+            else
+            {
+                string materiaName = string.Format("{0}/{1}_{2}",
+                   Constants.Constants.MaterialsFolderName,
+                   "roof", new System.Random().Next(BuildingsConstants.firstIndexRandomRoof, BuildingsConstants.endIndexRandomRoof));
 
-            string materiaName = string.Format("{0}/{1}_{2}",
-                    Constants.Constants.MaterialsFolderName,
-                    "roof", new System.Random().Next(BuildingsConstants.firstIndexRandomRoof, BuildingsConstants.endIndexRandomRoof));
+                Material material = Resources.Load(materiaName, typeof(Material)) as Material;
+                roof.GetComponent<Renderer>().material = material;
+            }
 
-            Material material = Resources.Load(materiaName, typeof(Material)) as Material;
-            roof.GetComponent<Renderer>().material = material;
+
             roof.transform.parent = parent;
         }
 
@@ -76,47 +85,55 @@ namespace Assets.Scripts.Factories.Osm
                                                        (buildingData.Tags[TagKeyEnum.Building]);
 
             string materiaName;
-            if (buildingData.Tags.ContainsKey(TagKeyEnum.Shop) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop1) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop2))
+            Material material = null;
+            if (!buildingData.Tags.ContainsKey(TagKeyEnum.BuildingColor))
             {
-                materiaName = string.Format("{0}/{1}_{2}",
-                  Constants.Constants.MaterialsFolderName,
-                  "shop", new System.Random().Next(BuildingsConstants.firstIndexRandomShop, BuildingsConstants.endIndexRandomShop));
+                if (buildingData.Tags.ContainsKey(TagKeyEnum.Shop) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop1) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop2))
+                {
+                    materiaName = string.Format("{0}/{1}_{2}",
+                      Constants.Constants.MaterialsFolderName,
+                      "shop", new System.Random().Next(BuildingsConstants.firstIndexRandomShop, BuildingsConstants.endIndexRandomShop));
 
+                }
+
+                else if (type == BuildingsTypeEnum.House ||
+                    type == BuildingsTypeEnum.Apartments ||
+                    type == BuildingsTypeEnum.Bungalow ||
+                    type == BuildingsTypeEnum.Detached ||
+                    type == BuildingsTypeEnum.Greenhouse ||
+                    type == BuildingsTypeEnum.Residential
+                    )
+                {
+                    materiaName = string.Format("{0}/{1}_{2}",
+                      Constants.Constants.MaterialsFolderName,
+                      OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
+                      OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(BuildingsTypeEnum.House));
+                }
+
+                else if (type == BuildingsTypeEnum.Hotel ||
+                    type == BuildingsTypeEnum.Commercial
+                    )
+                {
+                    materiaName = string.Format("{0}/{1}_{2}",
+                      Constants.Constants.MaterialsFolderName,
+                      OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
+                      OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(BuildingsTypeEnum.Hotel));
+
+                }
+                else
+                {
+                    materiaName = string.Format("{0}/{1}_{2}",
+                      Constants.Constants.MaterialsFolderName,
+                      OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
+                      new System.Random().Next(BuildingsConstants.firstIndexRandomBuilding, BuildingsConstants.endIndexRandomBuilding));
+
+
+                }
+                material = Resources.Load(materiaName, typeof(Material)) as Material;
             }
 
-            else if (type == BuildingsTypeEnum.House ||
-                type == BuildingsTypeEnum.Apartments ||
-                type == BuildingsTypeEnum.Bungalow ||
-                type == BuildingsTypeEnum.Detached ||
-                type == BuildingsTypeEnum.Greenhouse ||
-                type == BuildingsTypeEnum.Residential
-                )
-            {
-                materiaName = string.Format("{0}/{1}_{2}",
-                  Constants.Constants.MaterialsFolderName,
-                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
-                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(BuildingsTypeEnum.House));
-            }
-
-            else if (type == BuildingsTypeEnum.Hotel ||
-                type == BuildingsTypeEnum.Commercial
-                )
-            {
-                materiaName = string.Format("{0}/{1}_{2}",
-                  Constants.Constants.MaterialsFolderName,
-                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
-                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(BuildingsTypeEnum.Hotel));
-
-            }
-            else
-            {
-                materiaName = string.Format("{0}/{1}_{2}",
-                  Constants.Constants.MaterialsFolderName,
-                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
-                  new System.Random().Next(BuildingsConstants.firstIndexRandomBuilding, BuildingsConstants.endIndexRandomBuilding));
 
 
-            }
 
 
             for (int i = 1; i < buildingData.Nodes.Count; i++)
@@ -128,15 +145,27 @@ namespace Assets.Scripts.Factories.Osm
                                                new Vector3(pointB.x, minHeight, pointB.y),
                                                width, height, minHeight);
 
-                Material material = new Material(Resources.Load(materiaName, typeof(Material)) as Material);
-                int tilingX = (int)wall.transform.localScale.z;
-                if (tilingX == 0)
-                {
-                    tilingX = 1;
-                }
-                material.mainTextureScale = new Vector2(tilingX, levels);
 
-                wall.GetComponent<Renderer>().material = material;
+                if (buildingData.Tags.ContainsKey(TagKeyEnum.BuildingColor))
+                {
+
+                    var color = OsmToUnityConverter.HexToColor(buildingData.Tags[TagKeyEnum.BuildingColor].Replace("#", ""));
+                    wall.GetComponent<Renderer>().material.color = color;
+                }
+                else
+                {
+                    Material mat = new Material(material);
+                    int tilingX = (int)wall.transform.localScale.z;
+                    if (tilingX == 0)
+                    {
+                        tilingX = 1;
+                    }
+                    mat.mainTextureScale = new Vector2(tilingX, levels);
+
+                    wall.GetComponent<Renderer>().material = mat;
+                }
+
+
 
                 wall.transform.SetParent(parent);
             }
