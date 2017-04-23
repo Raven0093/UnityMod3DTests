@@ -23,6 +23,11 @@ namespace Assets.Scripts.Factories.Osm
             public const int firstIndexRandomRoof = 0;
             public const int endIndexRandomRoof = 4;
 
+            public const int firstIndexRandomShop = 0;
+            public const int endIndexRandomShop = 0;
+
+            public const int firstIndexRandomBuilding = 0;
+            public const int endIndexRandomBuilding = 3;
 
         }
 
@@ -47,7 +52,7 @@ namespace Assets.Scripts.Factories.Osm
             roof.transform.parent = parent;
         }
 
-        public static GameObject CreateWall(Vector3 pointA, Vector3 pointB, float width, float height)
+        public static GameObject CreateWall(Vector3 pointA, Vector3 pointB, float width, float height, float minHeight)
         {
             GameObject newWall = GameObject.CreatePrimitive(PrimitiveType.Cube);
 
@@ -56,29 +61,80 @@ namespace Assets.Scripts.Factories.Osm
             Vector3 between = pointB - pointA;
             float distance = between.magnitude;
 
-            newWall.transform.localScale = new Vector3(width, height, distance);
+            newWall.transform.localScale = new Vector3(width, height - minHeight, distance);
             newWall.transform.position = pointA + (between / 2.0f);
             newWall.transform.LookAt(pointB);
-            newWall.transform.position = new Vector3(newWall.transform.position.x, height / 2, newWall.transform.position.z);
+            newWall.transform.position = new Vector3(newWall.transform.position.x, minHeight + ((height - minHeight) / 2), newWall.transform.position.z);
 
             return newWall;
         }
 
-        public static void CreateWalls(List<OsmNode> nodes, OsmBounds bounds, float width, float levels, float height, float minHeight, Transform parent)
+        public static void CreateWalls(OsmWay buildingData, OsmBounds bounds, float width, float levels, float height, float minHeight, Transform parent)
         {
-            for (int i = 1; i < nodes.Count; i++)
+            BuildingsTypeEnum type = OSMtoSharp.Enums.Helpers.EnumExtensions.
+                                                       GetTagKeyEnum<BuildingsTypeEnum>
+                                                       (buildingData.Tags[TagKeyEnum.Building]);
+
+            string materiaName;
+            if (buildingData.Tags.ContainsKey(TagKeyEnum.Shop) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop1) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop2))
             {
-                Vector2 pointA = OsmToUnityConverter.GetPointFromUnityPointVec2(nodes[i].Point, bounds);
-                Vector2 pointB = OsmToUnityConverter.GetPointFromUnityPointVec2(nodes[i - 1].Point, bounds);
+                materiaName = string.Format("{0}/{1}_{2}",
+                  Constants.Constants.MaterialsFolderName,
+                  "shop", new System.Random().Next(BuildingsConstants.firstIndexRandomShop, BuildingsConstants.endIndexRandomShop));
+
+            }
+
+            else if (type == BuildingsTypeEnum.House ||
+                type == BuildingsTypeEnum.Apartments ||
+                type == BuildingsTypeEnum.Bungalow ||
+                type == BuildingsTypeEnum.Detached ||
+                type == BuildingsTypeEnum.Greenhouse ||
+                type == BuildingsTypeEnum.Residential
+                )
+            {
+                materiaName = string.Format("{0}/{1}_{2}",
+                  Constants.Constants.MaterialsFolderName,
+                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
+                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(BuildingsTypeEnum.House));
+            }
+
+            else if (type == BuildingsTypeEnum.Hotel ||
+                type == BuildingsTypeEnum.Commercial
+                )
+            {
+                materiaName = string.Format("{0}/{1}_{2}",
+                  Constants.Constants.MaterialsFolderName,
+                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
+                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(BuildingsTypeEnum.Hotel));
+
+            }
+            else
+            {
+                materiaName = string.Format("{0}/{1}_{2}",
+                  Constants.Constants.MaterialsFolderName,
+                  OSMtoSharp.Enums.Helpers.EnumExtensions.GetEnumAttributeValue(TagKeyEnum.Building),
+                  new System.Random().Next(BuildingsConstants.firstIndexRandomBuilding, BuildingsConstants.endIndexRandomBuilding));
+
+
+            }
+
+
+            for (int i = 1; i < buildingData.Nodes.Count; i++)
+            {
+                Vector2 pointA = OsmToUnityConverter.GetPointFromUnityPointVec2(buildingData.Nodes[i].Point, bounds);
+                Vector2 pointB = OsmToUnityConverter.GetPointFromUnityPointVec2(buildingData.Nodes[i - 1].Point, bounds);
 
                 GameObject wall = CreateWall(new Vector3(pointA.x, minHeight, pointA.y),
                                                new Vector3(pointB.x, minHeight, pointB.y),
-                                               width, height);
+                                               width, height, minHeight);
 
-
-                Material material = new Material(Resources.Load("shop_0", typeof(Material)) as Material);
-
-                material.mainTextureScale = new Vector2((int)wall.transform.localScale.z, levels);
+                Material material = new Material(Resources.Load(materiaName, typeof(Material)) as Material);
+                int tilingX = (int)wall.transform.localScale.z;
+                if (tilingX == 0)
+                {
+                    tilingX = 1;
+                }
+                material.mainTextureScale = new Vector2(tilingX, levels);
 
                 wall.GetComponent<Renderer>().material = material;
 
@@ -112,32 +168,36 @@ namespace Assets.Scripts.Factories.Osm
                 levels += float.Parse(buildingData.Tags[TagKeyEnum.BuildingLevels], CultureInfo.InvariantCulture);
                 height = levels * BuildingsConstants.wallHeight;
             }
-            if (buildingData.Tags.ContainsKey(TagKeyEnum.MinLevel))
+            if (buildingData.Tags.ContainsKey(TagKeyEnum.BuildingMinLevel))
             {
-                levels -= float.Parse(buildingData.Tags[TagKeyEnum.BuildingLevels], CultureInfo.InvariantCulture);
-                minHeight = BuildingsConstants.wallHeight;
+                float minLevel = float.Parse(buildingData.Tags[TagKeyEnum.BuildingMinLevel], CultureInfo.InvariantCulture);
+                levels -= minLevel;
+                minHeight = BuildingsConstants.wallHeight * minLevel;
             }
 
-            if (buildingData.Tags.ContainsKey(TagKeyEnum.Height))
+            if (buildingData.Tags.ContainsKey(TagKeyEnum.BuildingHeight))
             {
-                height = float.Parse(buildingData.Tags[TagKeyEnum.Height].Replace(" ", "").Replace("m", ""), CultureInfo.InvariantCulture);
+                height = float.Parse(buildingData.Tags[TagKeyEnum.BuildingHeight].Replace(" ", "").Replace("m", ""), CultureInfo.InvariantCulture);
             }
 
-            if (buildingData.Tags.ContainsKey(TagKeyEnum.MinHeight))
+            if (buildingData.Tags.ContainsKey(TagKeyEnum.BuildingMinHeight))
             {
-                minHeight = float.Parse(buildingData.Tags[TagKeyEnum.MinHeight], CultureInfo.InvariantCulture);
+                minHeight = float.Parse(buildingData.Tags[TagKeyEnum.BuildingMinHeight], CultureInfo.InvariantCulture);
             }
             if (levels == 0)
             {
                 levels = 1;
+
+            }
+            if (height == 0)
+            {
                 height = BuildingsConstants.wallHeight;
+
             }
 
-            BuildingsTypeEnum type = OSMtoSharp.Enums.Helpers.EnumExtensions.
-                                                                   GetTagKeyEnum<BuildingsTypeEnum>
-                                                                   (buildingData.Tags[TagKeyEnum.Building]);
 
-            CreateWalls(buildingData.Nodes, bounds, BuildingsConstants.wallWidth, levels, height, minHeight, result.transform);
+
+            CreateWalls(buildingData, bounds, BuildingsConstants.wallWidth, levels, height, minHeight, result.transform);
             CreateRoof(buildingData, bounds, height, result.transform);
 
             result.transform.parent = parent;
