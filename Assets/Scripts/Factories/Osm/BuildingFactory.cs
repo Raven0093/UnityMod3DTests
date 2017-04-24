@@ -36,18 +36,55 @@ namespace Assets.Scripts.Factories.Osm
             return BuildingsConstants.wallHeight * Assets.Scripts.Constants.Constants.Scale * level;
         }
 
+        public static bool SetColor(string colorString, Material material)
+        {
+            try
+            {
+                if (OsmToUnityConverter.OnlyHexInString(colorString))
+                {
+                    var color = OsmToUnityConverter.HexToColor(colorString);
+                    material.color = color;
+                    return true;
+                }
+                else
+                {
+                    var colorHex = OsmToUnityConverter.StringColorToHexString(colorString);
+                    if (!string.IsNullOrEmpty(colorHex))
+                    {
+                        if (OsmToUnityConverter.OnlyHexInString(colorHex))
+                        {
+                            var color = OsmToUnityConverter.HexToColor(colorHex);
+                            material.color = color;
+                            return true;
+                        }
+
+                    }
+                }
+            }
+            catch (Exception)
+            {
+
+
+            }
+
+
+            return false;
+        }
         public static void CreateRoof(OsmWay buildingData, OsmBounds bounds, float height, Transform parent)
         {
             GameObject roof = MeshFactory.CreateMesh(buildingData, bounds);
             roof.transform.localPosition = new Vector3(roof.transform.localPosition.x, height, roof.transform.localPosition.z);
             roof.name = "roof";
 
+            bool colorSet = false;
             if (buildingData.Tags.ContainsKey(TagKeyEnum.RoofColour))
             {
-                var color = OsmToUnityConverter.HexToColor(buildingData.Tags[TagKeyEnum.RoofColour].Replace("#", ""));
-                roof.GetComponent<Renderer>().material.color = color;
+                var colorString = buildingData.Tags[TagKeyEnum.RoofColour].Replace("#", "");
+                colorSet = SetColor(colorString, roof.GetComponent<Renderer>().material);
+                colorSet = true;
+
             }
-            else
+            if (!colorSet)
             {
                 string materiaName = string.Format("{0}/{1}_{2}",
                    Constants.Constants.MaterialsFolderName,
@@ -86,6 +123,8 @@ namespace Assets.Scripts.Factories.Osm
 
             string materiaName;
             Material material = null;
+
+
             if (!buildingData.Tags.ContainsKey(TagKeyEnum.BuildingColor))
             {
                 if (buildingData.Tags.ContainsKey(TagKeyEnum.Shop) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop1) || buildingData.Tags.ContainsKey(TagKeyEnum.Shop2))
@@ -148,9 +187,8 @@ namespace Assets.Scripts.Factories.Osm
 
                 if (buildingData.Tags.ContainsKey(TagKeyEnum.BuildingColor))
                 {
-
-                    var color = OsmToUnityConverter.HexToColor(buildingData.Tags[TagKeyEnum.BuildingColor].Replace("#", ""));
-                    wall.GetComponent<Renderer>().material.color = color;
+                    var color = buildingData.Tags[TagKeyEnum.BuildingColor].Replace("#", "");
+                    SetColor(color, wall.GetComponent<Renderer>().material);
                 }
                 else
                 {
@@ -164,9 +202,6 @@ namespace Assets.Scripts.Factories.Osm
 
                     wall.GetComponent<Renderer>().material = mat;
                 }
-
-
-
                 wall.transform.SetParent(parent);
             }
 

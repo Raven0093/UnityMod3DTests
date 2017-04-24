@@ -23,10 +23,10 @@ public class DataManager : MonoBehaviour
 
 
     string fileName = "C:\\Users\\Public\\Documents\\Unity Projects\\Tests\\Files\\Gliwice2.osm";
-    double minLon = -100;
-    double minLat = -100;
-    double maxLon = 100;
-    double maxLat = 100;
+    double minLon = -1000;
+    double minLat = -1000;
+    double maxLon = 1000;
+    double maxLat = 1000;
     public Text debugConsoleText;
 
     private string DebugConsoleText
