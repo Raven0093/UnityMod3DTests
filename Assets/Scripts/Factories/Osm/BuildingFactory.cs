@@ -48,16 +48,12 @@ namespace Assets.Scripts.Factories.Osm
                 }
                 else
                 {
-                    var colorHex = OsmToUnityConverter.StringColorToHexString(colorString);
-                    if (!string.IsNullOrEmpty(colorHex))
+                    System.Drawing.Color systemColor = System.Drawing.Color.FromName(colorString);
+                    if (systemColor.IsKnownColor)
                     {
-                        if (OsmToUnityConverter.OnlyHexInString(colorHex))
-                        {
-                            var color = OsmToUnityConverter.HexToColor(colorHex);
-                            material.color = color;
-                            return true;
-                        }
-
+                        var color = new Color(systemColor.R, systemColor.G, systemColor.B, systemColor.A);
+                        material.color = color;
+                        return true;
                     }
                 }
             }

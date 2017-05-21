@@ -2,13 +2,10 @@
 using Assets.Scripts.Factories.Helpers;
 using Assets.Scripts.Factories.Unity;
 using OSMtoSharp.Enums.Keys;
-using OSMtoSharp.Enums.Values;
 using OSMtoSharp.Model;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using UnityEngine;
+using UnityEngine.UI;
+
 
 namespace Assets.Scripts.Factories.Osm
 {
@@ -27,6 +24,11 @@ namespace Assets.Scripts.Factories.Osm
             public const float underConstruction = 0.01f;
             public const float cycleway = 0.005f;
             public const float defaultWidth = 0.1f;
+
+            public const float roadNameLabelSize = 0.5f;
+            public const float roadNameLabelPosY = 0.2f;
+            public const float roadNameStringSizeMultipler = 0.35f;
+            public static Color roadNameLabelColor = Color.black;
 
 
             public static Color motorwayColor = new Color(232 / 255, 146f / 255f, 162f / 255f, 1);
@@ -72,7 +74,87 @@ namespace Assets.Scripts.Factories.Osm
             }
 
         }
+        private static Vector3[] FindMaxDistance(Vector3[] linePoints)
+        {
+            Vector3[] result = new Vector3[2];
+            float max = 0;
+            for (int i = 1; i < linePoints.Length; i++)
+            {
+                float dis = Vector3.Distance(linePoints[i - 1], linePoints[i]);
+                if (dis > max)
+                {
+                    max = dis;
+                    result[0] = linePoints[i - 1];
+                    result[1] = linePoints[i];
+                }
 
+            }
+
+            return result;
+        }
+        private static void CreateRoadNameLabel(Vector3 pointA, Vector3 pointB, string roadName, Transform parent)
+        {
+            GameObject text = new GameObject();
+            text.transform.parent = parent.transform;
+            text.name = "Road name";
+            TextMesh textMesh = text.AddComponent<TextMesh>();
+            textMesh.text = roadName;
+            textMesh.transform.Rotate(90, 90, 0);
+            textMesh.characterSize = HighwaysConstants.roadNameLabelSize;
+            textMesh.color = HighwaysConstants.roadNameLabelColor;
+
+            if (pointA.z < pointB.z)
+            {
+                text.transform.position = new Vector3(pointB.x, HighwaysConstants.roadNameLabelPosY, pointB.z);
+                text.transform.LookAt(pointA);
+                text.transform.Rotate(90, text.transform.rotation.y - 90.0f, 0);
+            }
+            else if (pointA.z > pointB.z)
+            {
+                text.transform.position = new Vector3(pointA.x, HighwaysConstants.roadNameLabelPosY, pointA.z);
+                text.transform.LookAt(pointB);
+                text.transform.Rotate(90, text.transform.rotation.y - 90.0f, 0);
+            }
+            else
+            {
+                if (pointA.x < pointB.x)
+                {
+                    text.transform.position = new Vector3(pointA.x, HighwaysConstants.roadNameLabelPosY, pointA.z);
+                    text.transform.LookAt(pointB);
+                    text.transform.Rotate(90, text.transform.rotation.y - 90.0f, 0);
+                }
+                else
+                {
+                    text.transform.position = new Vector3(pointB.x, HighwaysConstants.roadNameLabelPosY, pointB.z);
+                    text.transform.LookAt(pointA);
+                    text.transform.Rotate(90, text.transform.rotation.y - 90.0f, 0);
+                }
+            }
+        }
+        private static void CreateRoadNameLabel(Vector3[] linePoints, string roadName, Transform parent)
+        {
+            if (linePoints.Length > 1)
+            {
+                int b = linePoints.Length / 2;
+                int a = b - 1;
+                Vector3 pointA = new Vector3(linePoints[a].x, linePoints[a].y, linePoints[a].z);
+                Vector3 pointB = new Vector3(linePoints[b].x, linePoints[b].y, linePoints[b].z);
+                if (Vector3.Distance(pointA, pointB) > roadName.Length * HighwaysConstants.roadNameStringSizeMultipler)
+                {
+                    CreateRoadNameLabel(pointA, pointB, roadName, parent);
+                }
+                else
+                {
+                    Vector3[] maxDis = FindMaxDistance(linePoints);
+                    pointA = maxDis[0];
+                    pointB = maxDis[1];
+                    if (Vector3.Distance(pointA, pointB) > roadName.Length * HighwaysConstants.roadNameStringSizeMultipler)
+                    {
+                        CreateRoadNameLabel(pointA, pointB, roadName, parent);
+                    }
+                }
+            }
+        }
         public static GameObject CreateHighway(OsmWay highwayData, OsmBounds bounds, Transform parent)
         {
             Vector3[] linePoints = new Vector3[highwayData.Nodes.Count];
@@ -93,6 +175,7 @@ namespace Assets.Scripts.Factories.Osm
             if (highwayData.Tags.ContainsKey(TagKeyEnum.Name))
             {
                 result.name = highwayData.Tags[TagKeyEnum.Name];
+                CreateRoadNameLabel(linePoints, result.name, result.transform);
             }
             else
             {

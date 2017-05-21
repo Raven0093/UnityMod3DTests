@@ -8,7 +8,7 @@ using System.Threading;
 using UnityEngine;
 using UnityEngine.UI;
 using OSMtoSharp.Enums.Keys;
-
+using System.IO;
 
 public class DataManager : MonoBehaviour
 {
@@ -55,6 +55,10 @@ public class DataManager : MonoBehaviour
         dataManagerFinished = false;
 
         osmData = null;
+        if (!LoadConfigFile())
+        {
+            dataManagerFinished = true;
+        }
     }
 
     void Update()
@@ -97,6 +101,85 @@ public class DataManager : MonoBehaviour
         }
     }
 
+
+    public bool LoadConfigFile()
+    {
+        bool fileNameBool = false;
+        bool minLonBool = false;
+        bool minLatBool = false;
+        bool maxLonBool = false;
+        bool maxLatBool = false;
+
+        if (!File.Exists(Assets.Scripts.Constants.Constants.ConfigFile))
+        {
+            DebugConsoleText += String.Format("Config file not exists - {0} \r\n", DateTime.Now.TimeOfDay);
+            return false;
+        }
+        using (StreamReader inputile = new StreamReader(Assets.Scripts.Constants.Constants.ConfigFile))
+        {
+            try
+            {
+                while (!inputile.EndOfStream)
+                {
+
+                    var a = inputile.ReadLine();
+                    var b = a.Split('=');
+                    if (b[0] == "Path")
+                    {
+                        fileName = b[1];
+                        fileNameBool = true;
+                    }
+                    else if (b[0] == "MinLat")
+                    {
+                        minLat = double.Parse(b[1]);
+                        minLatBool = true;
+                    }
+                    else if (b[0] == "MinLon")
+                    {
+                        minLon = double.Parse(b[1]);
+                        minLonBool = true;
+                    }
+                    else if (b[0] == "MaxLat")
+                    {
+                        maxLat = double.Parse(b[1]);
+                        maxLatBool = true;
+                    }
+                    else if (b[0] == "MaxLon")
+                    {
+                        maxLon = double.Parse(b[1]);
+                        maxLonBool = true;
+                    }
+                    else
+                    {
+
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                DebugConsoleText += String.Format("Config file is empty - {0} \r\n", DateTime.Now.TimeOfDay);
+                return false;
+            }
+
+
+            if (fileNameBool && minLonBool && minLatBool && maxLonBool && maxLatBool)
+            {
+                DebugConsoleText += String.Format("Load config data - {0} \r\n", DateTime.Now.TimeOfDay);
+                DebugConsoleText += String.Format("File path - {0} \r\n", fileName);
+                DebugConsoleText += String.Format("MinLat - {0} \r\n", minLat);
+                DebugConsoleText += String.Format("MinLon - {0} \r\n", minLon);
+                DebugConsoleText += String.Format("MaxLat - {0} \r\n", maxLat);
+                DebugConsoleText += String.Format("MaxLon - {0} \r\n", maxLon);
+                return true;
+            }
+            else
+            {
+                DebugConsoleText += String.Format("Config file is empty - {0} \r\n", DateTime.Now.TimeOfDay);
+                return false;
+            }
+
+        }
+    }
     private void AddDataToScene()
     {
         GameObject highways = new GameObject();
